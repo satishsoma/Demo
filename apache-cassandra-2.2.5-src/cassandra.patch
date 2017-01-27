@@ -1,0 +1,56 @@
+From 1c4f19083dd9c10151a66ae5e0c169f81ff6c434 Mon Sep 17 00:00:00 2001
+From: matope <matope.ono@gmail.com>
+Date: Thu, 24 Mar 2016 22:49:51 +0900
+Subject: [PATCH] Add query parameter on trace for Execute prepared CQL query
+ session.
+
+---
+ src/java/org/apache/cassandra/cql3/QueryProcessor.java               | 1 +
+ src/java/org/apache/cassandra/cql3/statements/ParsedStatement.java   | 2 ++
+ src/java/org/apache/cassandra/transport/messages/ExecuteMessage.java | 1 +
+ 3 files changed, 4 insertions(+)
+
+diff --git a/src/java/org/apache/cassandra/cql3/QueryProcessor.java b/src/java/org/apache/cassandra/cql3/QueryProcessor.java
+index 9ee3e17..1683f30 100644
+--- a/src/java/org/apache/cassandra/cql3/QueryProcessor.java
++++ b/src/java/org/apache/cassandra/cql3/QueryProcessor.java
+@@ -378,6 +378,7 @@ public static UntypedResultSet resultify(String query, PartitionIterator partiti
+             return existing;
+ 
+         ParsedStatement.Prepared prepared = getStatement(queryString, clientState);
++        prepared.rawCQLStatement = queryString;
+         int boundTerms = prepared.statement.getBoundTerms();
+         if (boundTerms > FBUtilities.MAX_UNSIGNED_SHORT)
+             throw new InvalidRequestException(String.format("Too many markers(?). %d markers exceed the allowed maximum of %d", boundTerms, FBUtilities.MAX_UNSIGNED_SHORT));
+diff --git a/src/java/org/apache/cassandra/cql3/statements/ParsedStatement.java b/src/java/org/apache/cassandra/cql3/statements/ParsedStatement.java
+index 4c3f8a9..960cc93 100644
+--- a/src/java/org/apache/cassandra/cql3/statements/ParsedStatement.java
++++ b/src/java/org/apache/cassandra/cql3/statements/ParsedStatement.java
+@@ -48,6 +48,7 @@ public void setBoundVariables(VariableSpecifications variables)
+ 
+     public static class Prepared
+     {
++        public String rawCQLStatement;
+         public final CQLStatement statement;
+         public final List<ColumnSpecification> boundNames;
+         public final Short[] partitionKeyBindIndexes;
+@@ -57,6 +58,7 @@ protected Prepared(CQLStatement statement, List<ColumnSpecification> boundNames,
+             this.statement = statement;
+             this.boundNames = boundNames;
+             this.partitionKeyBindIndexes = partitionKeyBindIndexes;
++            this.rawCQLStatement = "";
+         }
+ 
+         public Prepared(CQLStatement statement, VariableSpecifications names, Short[] partitionKeyBindIndexes)
+diff --git a/src/java/org/apache/cassandra/transport/messages/ExecuteMessage.java b/src/java/org/apache/cassandra/transport/messages/ExecuteMessage.java
+index df6acc0..c5e775e 100644
+--- a/src/java/org/apache/cassandra/transport/messages/ExecuteMessage.java
++++ b/src/java/org/apache/cassandra/transport/messages/ExecuteMessage.java
+@@ -119,6 +119,7 @@ public ExecuteMessage(MD5Digest statementId, QueryOptions options)
+                     builder.put("consistency_level", options.getConsistency().name());
+                 if(options.getSerialConsistency() != null)
+                     builder.put("serial_consistency_level", options.getSerialConsistency().name());
++                builder.put("query", prepared.rawCQLStatement);
+ 
+                 // TODO we don't have [typed] access to CQL bind variables here.  CASSANDRA-4560 is open to add support.
+                 Tracing.instance.begin("Execute CQL3 prepared query", state.getClientAddress(), builder.build());
