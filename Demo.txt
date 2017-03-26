@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 this the first commit to git repo
 this is the seond commit to repo
+=======
+hello satish
+>>>>>>> dev
