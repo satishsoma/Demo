@@ -1,2 +1,10 @@
+<<<<<<< HEAD
 this the first commit to git repo
+<<<<<<< HEAD
 this is the seond commit to git repo
+=======
+this is the seond commit to repo
+=======
+hello satish
+>>>>>>> dev
+>>>>>>> qa
