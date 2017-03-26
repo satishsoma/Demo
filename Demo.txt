@@ -1,1 +1,1 @@
-this the first commit to git repo
+hello satish
